@@ -421,7 +421,7 @@ MIT License
 如有问题或建议，请通过以下方式联系：
 - 提交GitHub Issue
 - Pull Request
-- Email:quantumliu@outlook.com
+- Email:quantum-liu@outlook.com
 
 ---
 
