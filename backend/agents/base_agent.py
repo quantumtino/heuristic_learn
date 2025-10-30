@@ -48,6 +48,30 @@ class BaseAgent(ABC):
         Returns:
             模型响应
         """
-        # 这里将实现实际的模型调用逻辑
-        # 暂时返回模拟响应
-        return f"Model response for prompt: {prompt}"
+        try:
+            from dashscope import Generation
+            
+            messages = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+            messages.append({"role": "user", "content": prompt})
+            
+            response = Generation.call(
+                model=self.model_name,
+                messages=messages,
+                api_key=self.api_key
+            )
+            
+            if response.status_code == 200:
+                # 检查响应结构
+                if hasattr(response.output, 'choices') and response.output.choices:
+                    return response.output.choices[0].message.content
+                elif hasattr(response.output, 'text'):
+                    return response.output.text
+                else:
+                    raise Exception(f"无法解析API响应结构: {response.output}")
+            else:
+                raise Exception(f"API调用失败 (状态码: {response.status_code}): {response.message}")
+                
+        except Exception as e:
+            raise Exception(f"模型调用出错: {str(e)}")
