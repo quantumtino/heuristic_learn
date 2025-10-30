@@ -6,11 +6,17 @@
 使用qwen-flash模拟中学生提问并评分
 """
 
+import sys
 import os
 import json
 import time
 from typing import Dict, List, Any
 from datetime import datetime
+
+# 添加项目根目录到Python路径，以便正确导入backend模块
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
+
 from dashscope import Generation
 from backend.workflow import WorkflowManager
 from backend.config.settings import settings
@@ -19,13 +25,14 @@ from backend.config.settings import settings
 class BatchTestComparison:
     """批量测试对比类"""
     
-    def __init__(self):
+    def __init__(self, num_questions=6):
         """初始化测试"""
         self.workflow_manager = WorkflowManager()
         self.api_key = settings.dashscope_api_key
         self.test_results = []
+        self.num_questions = num_questions
         
-    def generate_student_questions(self, num_questions: int = 5) -> List[str]:
+    def generate_student_questions(self, num_questions: int = None) -> List[str]:
         """
         使用qwen-flash生成中学生风格的问题
         
@@ -35,12 +42,15 @@ class BatchTestComparison:
         Returns:
             问题列表
         """
+        if num_questions is None:
+            num_questions = self.num_questions
+            
         print(f"\n{'='*60}")
         print("步骤1: 生成中学生问题")
         print(f"{'='*60}")
         
-        system_prompt = """你是一位初中生，对各学科知识充满好奇。
-请生成5个典型的中学生会问的问题，要求：
+        system_prompt = f"""你是一位初中生，对各学科知识充满好奇.
+请生成{num_questions}个典型的中学生会问的问题，要求：
 1. 涵盖物理、化学、数学、生物等不同学科
 2. 问题要简单直白，符合中学生的提问方式
 3. 既有基础概念问题，也有现象解释问题
@@ -72,17 +82,17 @@ class BatchTestComparison:
                 # 取前num_questions个问题
                 questions = questions[:num_questions]
                 
-                print(f"\n✓ 成功生成 {len(questions)} 个问题:")
+                print(f"\n[SUCCESS] 成功生成 {len(questions)} 个问题:")
                 for i, q in enumerate(questions, 1):
                     print(f"  {i}. {q}")
                 
                 return questions
             else:
-                print(f"✗ 问题生成失败: {response.message}")
+                print(f"[ERROR] 问题生成失败: {response.message}")
                 return []
                 
         except Exception as e:
-            print(f"✗ 生成问题时出错: {e}")
+            print(f"[ERROR] 生成问题时出错: {e}")
             return []
     
     def get_workflow_response(self, question: str) -> Dict[str, Any]:
@@ -260,7 +270,7 @@ class BatchTestComparison:
                     
                     return scores
                 except json.JSONDecodeError:
-                    print(f"  ✗ JSON解析失败，原始响应: {result_text[:100]}...")
+                    print(f"  [ERROR] JSON解析失败，原始响应: {result_text[:100]}...")
                     return {
                         "易理解性": 0,
                         "启发性": 0,
@@ -271,7 +281,7 @@ class BatchTestComparison:
                         "评语": "评分失败"
                     }
             else:
-                print(f"  ✗ 评估失败: {response_obj.message}")
+                print(f"  [ERROR] 评估失败: {response_obj.message}")
                 return {
                     "易理解性": 0,
                     "启发性": 0,
@@ -283,7 +293,7 @@ class BatchTestComparison:
                 }
                 
         except Exception as e:
-            print(f"  ✗ 评估时出错: {e}")
+            print(f"  [ERROR] 评估时出错: {e}")
             return {
                 "易理解性": 0,
                 "启发性": 0,
@@ -302,10 +312,10 @@ class BatchTestComparison:
         print(f"测试时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         
         # 1. 生成问题
-        questions = self.generate_student_questions(5)
+        questions = self.generate_student_questions(self.num_questions)
         
         if not questions:
-            print("\n✗ 未能生成测试问题，测试终止")
+            print("\n[ERROR] 未能生成测试问题，测试终止")
             return
         
         # 2. 对每个问题进行测试
@@ -336,9 +346,9 @@ class BatchTestComparison:
                     "三阶段工作流"
                 )
                 test_case["workflow_score"] = workflow_score
-                print(f"  ✓ 三阶段工作流得分: {workflow_score.get('总分', 0)}/50")
+                print(f"  [SUCCESS] 三阶段工作流得分: {workflow_score.get('总分', 0)}/50")
             else:
-                print(f"  ✗ 三阶段工作流失败")
+                print(f"  [ERROR] 三阶段工作流失败")
             
             # 2.2 直接使用qwen-max
             direct_result = self.get_direct_max_response(question)
@@ -351,9 +361,9 @@ class BatchTestComparison:
                     "直接使用qwen-max"
                 )
                 test_case["direct_max_score"] = direct_score
-                print(f"  ✓ 直接qwen-max得分: {direct_score.get('总分', 0)}/50")
+                print(f"  [SUCCESS] 直接qwen-max得分: {direct_score.get('总分', 0)}/50")
             else:
-                print(f"  ✗ 直接qwen-max失败")
+                print(f"  [ERROR] 直接qwen-max失败")
             
             self.test_results.append(test_case)
             
@@ -398,9 +408,9 @@ class BatchTestComparison:
             "详细结果": self.test_results
         }
         
-        # 创建按日期组织的目录结构
-        date_str = datetime.now().strftime('%Y%m%d')
-        results_dir = f"test_results_{date_str}"
+        # 创建按精确时间组织的目录结构（精确到秒）
+        time_str = datetime.now().strftime('%Y%m%d_%H%M%S')
+        results_dir = f"batch_tests/test_results_{time_str}"
         os.makedirs(results_dir, exist_ok=True)
         
         # 保存到JSON文件
@@ -408,7 +418,7 @@ class BatchTestComparison:
         with open(report_file, 'w', encoding='utf-8') as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
         
-        print(f"\n✓ 详细报告已保存至: {report_file}")
+        print(f"\n[SUCCESS] 详细报告已保存至: {report_file}")
         
         # 打印摘要
         print(f"\n{'='*60}")
@@ -416,13 +426,13 @@ class BatchTestComparison:
         print(f"{'='*60}")
         print(f"\n测试问题数: {len(self.test_results)}")
         
-        print(f"\n【三阶段工作流】")
+        print(f"\n[三阶段工作流]")
         print(f"  平均分: {report['三阶段工作流']['平均分']:.2f}/50")
         print(f"  最高分: {report['三阶段工作流']['最高分']:.2f}")
         print(f"  最低分: {report['三阶段工作流']['最低分']:.2f}")
         print(f"  成功率: {report['三阶段工作流']['成功率']}")
         
-        print(f"\n【直接使用qwen-max】")
+        print(f"\n[直接使用qwen-max]")
         print(f"  平均分: {report['直接qwen-max']['平均分']:.2f}/50")
         print(f"  最高分: {report['直接qwen-max']['最高分']:.2f}")
         print(f"  最低分: {report['直接qwen-max']['最低分']:.2f}")
@@ -431,16 +441,15 @@ class BatchTestComparison:
         # 对比分析
         if workflow_scores and direct_scores:
             diff = report['三阶段工作流']['平均分'] - report['直接qwen-max']['平均分']
-            print(f"\n【对比分析】")
+            print(f"\n[对比分析]")
             if diff > 0:
-                print(f"  ✓ 三阶段工作流平均分高出 {diff:.2f} 分 ({diff/50*100:.1f}%)")
-                print(f"  → 三阶段工作流在中学生视角下表现更优")
+                print(f"  [SUCCESS] 三阶段工作流平均分高出 {diff:.2f} 分 ({diff/50*100:.1f}%)")
+                print(f"  [INFO] 三阶段工作流在中学生视角下表现更优")
             elif diff < 0:
-                print(f"  ✗ 三阶段工作流平均分低 {abs(diff):.2f} 分 ({abs(diff)/50*100:.1f}%)")
-                print(f"  → 直接使用qwen-max表现更优")
+                print(f"  [ERROR] 三阶段工作流平均分低 {abs(diff):.2f} 分 ({abs(diff)/50*100:.1f}%)")
+                print(f"  [INFO] 直接使用qwen-max表现更优")
             else:
-                print(f"  = 两种方法得分相当")
-        
+                print(f"  [=] 两种方法得分相当")
         print(f"\n{'='*60}")
         
         return report
@@ -449,26 +458,35 @@ class BatchTestComparison:
         """生成可视化图表"""
         try:
             # 导入可视化模块
-            from .visualize_results import generate_visualizations
+            from batch_tests.visualize_results import generate_visualizations
             # 生成带时间戳的图表
             generate_visualizations(report_file_path)
             print(f"✓ 可视化图表已生成")
         except ImportError:
-            print("⚠ 无法导入可视化模块，跳过图表生成")
+            print("[INFO] 无法导入可视化模块，跳过图表生成")
         except Exception as e:
-            print(f"⚠ 生成可视化图表时出错: {e}")
+            print(f"[ERROR] 生成可视化图表时出错: {e}")
 
 
 def main():
     """主函数"""
-    tester = BatchTestComparison()
+    import sys
+    # 从命令行参数获取测试次数，默认为6
+    num_questions = 6
+    if len(sys.argv) > 1:
+        try:
+            num_questions = int(sys.argv[1])
+        except ValueError:
+            print(f"[INFO] 无效的参数，使用默认值: {num_questions}")
+    
+    tester = BatchTestComparison(num_questions=num_questions)
     report = tester.run_comparison_test()
     
     # 在测试完成后自动生成可视化图表
     if hasattr(tester, 'test_results') and tester.test_results:
         # 获取最新生成的报告文件路径
-        date_str = datetime.now().strftime('%Y%m%d')
-        results_dir = f"test_results_{date_str}"
+        time_str = datetime.now().strftime('%Y%m%d_%H%M%S')
+        results_dir = f"batch_tests/test_results_{time_str}"
         import glob
         report_files = glob.glob(f"{results_dir}/test_report_*.json")
         if report_files:

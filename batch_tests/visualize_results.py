@@ -122,7 +122,7 @@ def plot_detailed_comparison(report_data, results_dir):
         direct_scores.append([item['direct_max_score'][dim] for dim in dimensions])
     
     # 创建子图
-    fig, axes = plt.subplots(2, 3, figsize=(18, 12))
+    fig, axes = plt.subplots(2, 3, figsize=(18, 14))  # 增加高度以容纳问题说明
     axes = axes.flatten()
     
     # 为每个维度绘制对比图
@@ -158,26 +158,9 @@ def plot_detailed_comparison(report_data, results_dir):
             # 设置标题和标签
             ax.set_title(f'{dim}评分对比', fontsize=12)
             ax.set_xticks(x)
-            # 水平显示标签，并在过长时换行
-            formatted_labels = []
-            for q in questions:
-                if len(q) > 15:
-                    # 将长标签按空格分割成多行
-                    words = q.split()
-                    lines = []
-                    current_line = ""
-                    for word in words:
-                        if len(current_line + word) <= 15:
-                            current_line += word + " "
-                        else:
-                            lines.append(current_line.strip())
-                            current_line = word + " "
-                    if current_line:
-                        lines.append(current_line.strip())
-                    formatted_labels.append('\n'.join(lines))
-                else:
-                    formatted_labels.append(q)
-            ax.set_xticklabels(formatted_labels, rotation=0, ha='center', fontsize=9)
+            # 使用问题1, 问题2...作为标签
+            question_labels = [f'问题{i+1}' for i in range(len(questions))]
+            ax.set_xticklabels(question_labels, rotation=0, ha='center', fontsize=9)
             ax.set_ylabel('分数', fontsize=10)
             ax.legend(fontsize=9)
             ax.grid(axis='y', alpha=0.3)
@@ -186,8 +169,12 @@ def plot_detailed_comparison(report_data, results_dir):
     for i in range(len(dimensions), len(axes)):
         axes[i].set_visible(False)
     
-    # 调整布局
-    plt.tight_layout()
+    # 在图下方添加问题说明
+    fig.text(0.5, 0.02, '问题列表：\n' + '\n'.join([f'问题{i+1}: {q}' for i, q in enumerate(questions)]), 
+             ha='center', va='bottom', fontsize=10, wrap=True)
+    
+    # 调整布局，为底部文本留出空间
+    plt.subplots_adjust(bottom=0.15)
     
     # 生成带时间戳的文件名
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
