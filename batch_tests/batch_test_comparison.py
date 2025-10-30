@@ -398,8 +398,13 @@ class BatchTestComparison:
             "详细结果": self.test_results
         }
         
+        # 创建按日期组织的目录结构
+        date_str = datetime.now().strftime('%Y%m%d')
+        results_dir = f"test_results_{date_str}"
+        os.makedirs(results_dir, exist_ok=True)
+        
         # 保存到JSON文件
-        report_file = f"test_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        report_file = f"{results_dir}/test_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         with open(report_file, 'w', encoding='utf-8') as f:
             json.dump(report, f, ensure_ascii=False, indent=2)
         
@@ -440,11 +445,35 @@ class BatchTestComparison:
         
         return report
 
+    def generate_visualization(self, report_file_path: str):
+        """生成可视化图表"""
+        try:
+            # 导入可视化模块
+            from .visualize_results import generate_visualizations
+            # 生成带时间戳的图表
+            generate_visualizations(report_file_path)
+            print(f"✓ 可视化图表已生成")
+        except ImportError:
+            print("⚠ 无法导入可视化模块，跳过图表生成")
+        except Exception as e:
+            print(f"⚠ 生成可视化图表时出错: {e}")
+
 
 def main():
     """主函数"""
     tester = BatchTestComparison()
-    tester.run_comparison_test()
+    report = tester.run_comparison_test()
+    
+    # 在测试完成后自动生成可视化图表
+    if hasattr(tester, 'test_results') and tester.test_results:
+        # 获取最新生成的报告文件路径
+        date_str = datetime.now().strftime('%Y%m%d')
+        results_dir = f"test_results_{date_str}"
+        import glob
+        report_files = glob.glob(f"{results_dir}/test_report_*.json")
+        if report_files:
+            latest_report = max(report_files, key=os.path.getctime)
+            tester.generate_visualization(latest_report)
 
 
 if __name__ == "__main__":

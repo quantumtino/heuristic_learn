@@ -30,12 +30,13 @@ def load_test_report(report_path):
         return json.load(f)
 
 
-def plot_overall_comparison(report_data):
+def plot_overall_comparison(report_data, results_dir):
     """
     绘制整体对比图
-    
+
     Args:
         report_data (dict): 测试报告数据
+        results_dir (str): 结果保存目录
     """
     # 准备数据
     methods = ['三阶段工作流', '直接qwen-max']
@@ -85,22 +86,28 @@ def plot_overall_comparison(report_data):
     # 添加网格
     ax.grid(axis='y', alpha=0.3)
     
+    # 生成带时间戳的文件名
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f'overall_comparison_{timestamp}.png'
+    filepath = os.path.join(results_dir, filename)
+    
     # 调整布局
     plt.tight_layout()
     
     # 保存图片
-    plt.savefig('overall_comparison.png', dpi=300, bbox_inches='tight')
-    print("已生成整体对比图: overall_comparison.png")
+    plt.savefig(filepath, dpi=300, bbox_inches='tight')
+    print(f"已生成整体对比图: {filepath}")
     
     return fig
 
 
-def plot_detailed_comparison(report_data):
+def plot_detailed_comparison(report_data, results_dir):
     """
     绘制详细对比图（各维度评分）
-    
+
     Args:
         report_data (dict): 测试报告数据
+        results_dir (str): 结果保存目录
     """
     # 准备数据
     questions = [item['question'] for item in report_data['详细结果']]
@@ -182,19 +189,25 @@ def plot_detailed_comparison(report_data):
     # 调整布局
     plt.tight_layout()
     
+    # 生成带时间戳的文件名
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f'detailed_comparison_{timestamp}.png'
+    filepath = os.path.join(results_dir, filename)
+    
     # 保存图片
-    plt.savefig('detailed_comparison.png', dpi=300, bbox_inches='tight')
-    print("已生成详细对比图: detailed_comparison.png")
+    plt.savefig(filepath, dpi=300, bbox_inches='tight')
+    print(f"已生成详细对比图: {filepath}")
     
     return fig
 
 
-def plot_total_scores_comparison(report_data):
+def plot_total_scores_comparison(report_data, results_dir):
     """
     绘制总分对比图
-    
+
     Args:
         report_data (dict): 测试报告数据
+        results_dir (str): 结果保存目录
     """
     # 准备数据
     questions = [item['question'] for item in report_data['详细结果']]
@@ -257,19 +270,25 @@ def plot_total_scores_comparison(report_data):
     # 调整布局
     plt.tight_layout()
     
+    # 生成带时间戳的文件名
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f'total_scores_comparison_{timestamp}.png'
+    filepath = os.path.join(results_dir, filename)
+    
     # 保存图片
-    plt.savefig('total_scores_comparison.png', dpi=300, bbox_inches='tight')
-    print("已生成总分对比图: total_scores_comparison.png")
+    plt.savefig(filepath, dpi=300, bbox_inches='tight')
+    print(f"已生成总分对比图: {filepath}")
     
     return fig
 
 
-def plot_dimension_averages(report_data):
+def plot_dimension_averages(report_data, results_dir):
     """
     绘制各维度平均分对比图
-    
+
     Args:
         report_data (dict): 测试报告数据
+        results_dir (str): 结果保存目录
     """
     # 准备数据
     dimensions = ['易理解性', '启发性', '趣味性', '完整性', '实用性']
@@ -322,9 +341,14 @@ def plot_dimension_averages(report_data):
     # 调整布局
     plt.tight_layout()
     
+    # 生成带时间戳的文件名
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f'dimension_averages_comparison_{timestamp}.png'
+    filepath = os.path.join(results_dir, filename)
+    
     # 保存图片
-    plt.savefig('dimension_averages_comparison.png', dpi=300, bbox_inches='tight')
-    print("已生成维度平均分对比图: dimension_averages_comparison.png")
+    plt.savefig(filepath, dpi=300, bbox_inches='tight')
+    print(f"已生成维度平均分对比图: {filepath}")
     
     return fig
 
@@ -332,27 +356,33 @@ def plot_dimension_averages(report_data):
 def generate_visualizations(report_path='test_report_20251030_210320.json'):
     """
     生成所有可视化图表
-    
+
     Args:
         report_path (str): 测试报告文件路径
     """
     print(f"正在加载测试报告: {report_path}")
     report_data = load_test_report(report_path)
     
+    # 从报告路径中提取日期目录
+    import os
+    from datetime import datetime
+    report_dir = os.path.dirname(report_path)
+    if not report_dir:
+        # 如果报告路径中没有目录，则创建默认日期目录
+        date_str = datetime.now().strftime('%Y%m%d')
+        report_dir = f"test_results_{date_str}"
+        os.makedirs(report_dir, exist_ok=True)
+    
     print("正在生成可视化图表...")
     
     # 生成各种对比图
-    plot_overall_comparison(report_data)
-    plot_detailed_comparison(report_data)
-    plot_total_scores_comparison(report_data)
-    plot_dimension_averages(report_data)
+    plot_overall_comparison(report_data, report_dir)
+    plot_detailed_comparison(report_data, report_dir)
+    plot_total_scores_comparison(report_data, report_dir)
+    plot_dimension_averages(report_data, report_dir)
     
     print("\n可视化图表生成完成！")
-    print("生成的文件:")
-    print("- overall_comparison.png: 整体性能对比图")
-    print("- detailed_comparison.png: 详细维度对比图")
-    print("- total_scores_comparison.png: 总分对比图")
-    print("- dimension_averages_comparison.png: 各维度平均分对比图")
+    print(f"生成的文件保存在: {report_dir}")
 
 
 if __name__ == "__main__":
