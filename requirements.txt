@@ -1,0 +1,15 @@
+# 项目依赖包列表
+# 推荐使用conda环境安装，详见environment.yml
+
+fastapi==0.104.1
+uvicorn==0.24.0
+python-dotenv==1.0.0
+langchain==0.0.350
+langchain-community==0.0.10
+dashscope>=1.14.0
+pypdf==3.17.0
+python-docx==0.8.11
+faiss-cpu==1.7.4
+pydantic==2.5.0
+pydantic-settings>=2.0.0
+requests==2.31.0

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中学生知识辅助学习系统</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .input-section {
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: vertical;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result-section {
+            margin-top: 20px;
+        }
+        .output {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            min-height: 100px;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+        .warning {
+            color: orange;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>中学生知识辅助学习系统</h1>
+        
+        <div class="input-section">
+            <label for="userInput">请输入您想学习的知识点：</label>
+            <textarea id="userInput" placeholder="例如：请解释牛顿第一定律"></textarea>
+            <br><br>
+            <button onclick="processRequest()">开始学习</button>
+            <button onclick="clearOutput()">清空结果</button>
+        </div>
+        
+        <div class="input-section">
+            <label for="fileInput">上传知识库文件（PDF/DOCX）：</label>
+            <input type="file" id="fileInput" accept=".pdf,.docx">
+            <br>
+            <button onclick="uploadFile()">上传文件</button>
+        </div>
+        
+        <div class="result-section">
+            <h2>学习结果：</h2>
+            <div id="output" class="output">
+                <p>在这里查看学习结果...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 后端API地址
+        const API_BASE = "http://localhost:8000";
+        
+        async function processRequest() {
+            const userInput = document.getElementById('userInput').value;
+            const output = document.getElementById('output');
+            
+            if (!userInput.trim()) {
+                output.innerHTML = '<p class="error">请输入学习内容</p>';
+                return;
+            }
+            
+            output.innerHTML = '<p class="loading">正在处理中，请稍候...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/learn`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ topic: userInput })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const data = result.data;
+                    let html = `
+                        <h3>原始输入：</h3>
+                        <p>${data.original_input}</p>
+                        
+                        <h3>优化后的提示词：</h3>
+                        <p>${data.optimized_prompt}</p>
+                        
+                        <h3>对话式学习内容：</h3>
+                        <pre>${data.dialog_content}</pre>
+                    `;
+                    
+                    if (data.mind_map) {
+                        html += `
+                            <h3>思维导图：</h3>
+                            <pre>${data.mind_map}</pre>
+                        `;
+                    }
+                    
+                    if (data.review_passed) {
+                        html += '<p class="success">✓ 内容已通过知识审查</p>';
+                    } else {
+                        html += `<p class="warning">⚠ 内容未通过知识审查：${data.review_feedback}</p>`;
+                    }
+                    
+                    output.innerHTML = html;
+                } else {
+                    output.innerHTML = `<p class="error">处理失败：${result.error}</p>`;
+                }
+            } catch (error) {
+                output.innerHTML = `<p class="error">请求失败：${error.message}</p>`;
+            }
+        }
+        
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const output = document.getElementById('output');
+            
+            if (!fileInput.files.length) {
+                output.innerHTML = '<p class="error">请选择要上传的文件</p>';
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            output.innerHTML = `<p class="loading">正在上传文件：${file.name}...</p>`;
+            
+            try {
+                const response = await fetch(`${API_BASE}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    output.innerHTML = `
+                        <p class="success">文件 ${result.filename} 上传成功！</p>
+                        <h3>文件内容预览：</h3>
+                        <pre>${result.content}</pre>
+                    `;
+                } else {
+                    output.innerHTML = `<p class="error">上传失败：${result.error}</p>`;
+                }
+            } catch (error) {
+                output.innerHTML = `<p class="error">上传失败：${error.message}</p>`;
+            }
+        }
+        
+        function clearOutput() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<p>在这里查看学习结果...</p>';
+        }
+    </script>
+</body>
+</html>
