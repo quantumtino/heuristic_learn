@@ -151,16 +151,26 @@ def plot_detailed_comparison(report_data):
             # 设置标题和标签
             ax.set_title(f'{dim}评分对比', fontsize=12)
             ax.set_xticks(x)
-            # 水平显示标签，过长的文本换行
-            formatted_questions = []
+            # 水平显示标签，并在过长时换行
+            formatted_labels = []
             for q in questions:
                 if len(q) > 15:
-                    # 将长文本按15个字符分割换行
-                    formatted_q = '\n'.join([q[i:i+15] for i in range(0, len(q), 15)])
-                    formatted_questions.append(formatted_q)
+                    # 将长标签按空格分割成多行
+                    words = q.split()
+                    lines = []
+                    current_line = ""
+                    for word in words:
+                        if len(current_line + word) <= 15:
+                            current_line += word + " "
+                        else:
+                            lines.append(current_line.strip())
+                            current_line = word + " "
+                    if current_line:
+                        lines.append(current_line.strip())
+                    formatted_labels.append('\n'.join(lines))
                 else:
-                    formatted_questions.append(q)
-            ax.set_xticklabels(formatted_questions, rotation=0, ha='center', fontsize=9)
+                    formatted_labels.append(q)
+            ax.set_xticklabels(formatted_labels, rotation=0, ha='center', fontsize=9)
             ax.set_ylabel('分数', fontsize=10)
             ax.legend(fontsize=9)
             ax.grid(axis='y', alpha=0.3)
@@ -219,16 +229,26 @@ def plot_total_scores_comparison(report_data):
     ax.set_ylabel('总分', fontsize=12)
     ax.set_title('各问题总分对比 - 三阶段启发式工作流 vs 直接使用qwen-max', fontsize=14)
     ax.set_xticks(x)
-    # 水平显示标签，过长的文本换行
-    formatted_questions = []
+    # 水平显示标签，并在过长时换行
+    formatted_labels = []
     for q in questions:
         if len(q) > 15:
-            # 将长文本按15个字符分割换行
-            formatted_q = '\n'.join([q[i:i+15] for i in range(0, len(q), 15)])
-            formatted_questions.append(formatted_q)
+            # 将长标签按空格分割成多行
+            words = q.split()
+            lines = []
+            current_line = ""
+            for word in words:
+                if len(current_line + word) <= 15:
+                    current_line += word + " "
+                else:
+                    lines.append(current_line.strip())
+                    current_line = word + " "
+            if current_line:
+                lines.append(current_line.strip())
+            formatted_labels.append('\n'.join(lines))
         else:
-            formatted_questions.append(q)
-    ax.set_xticklabels(formatted_questions, rotation=0, ha='center', fontsize=10)
+            formatted_labels.append(q)
+    ax.set_xticklabels(formatted_labels, rotation=0, ha='center', fontsize=10)
     ax.legend()
     
     # 添加网格

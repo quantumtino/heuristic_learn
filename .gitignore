@@ -48,3 +48,10 @@ wheels/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Test results and data
+batch_tests/test_results_*/
+batch_tests/*.json
+batch_tests/*.png
+test_report_*.json
+terminal_test_report_*.json
