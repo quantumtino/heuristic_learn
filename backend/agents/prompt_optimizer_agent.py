@@ -9,6 +9,10 @@
 from typing import Any, Dict
 from backend.agents.base_agent import BaseAgent
 from backend.config.settings import settings
+from backend.prompts import (
+    PROMPT_OPTIMIZER_SYSTEM,
+    PROMPT_OPTIMIZER_USER_TEMPLATE,
+)
 
 
 class PromptOptimizerAgent(BaseAgent):
@@ -28,19 +32,8 @@ class PromptOptimizerAgent(BaseAgent):
         Returns:
             str: 优化后的提示词
         """
-        # 构建系统提示词
-        system_prompt = """你是一个专业的提示词优化专家。你的任务是将用户输入的提示词优化得更加清晰、具体，
-        适合用于生成面向中学生的启发性教学内容。请确保优化后的提示词能够引导模型产生：
-        1. 易于理解的表达方式
-        2. 对话式的交互形式
-        3. 启发性的思考角度
-        4. 准确的知识点覆盖
-        
-        请直接返回优化后的提示词，不要添加任何解释或其他内容。
-        """
-        
-        # 构建用户提示词
-        user_prompt = f"请优化以下提示词：{input_data}"
+        system_prompt = PROMPT_OPTIMIZER_SYSTEM
+        user_prompt = PROMPT_OPTIMIZER_USER_TEMPLATE.format(input_data=input_data)
         
         # 调用模型进行优化
         optimized_prompt = self._call_model(

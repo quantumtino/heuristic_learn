@@ -9,6 +9,10 @@
 from typing import Any, Dict, Tuple
 from backend.agents.base_agent import BaseAgent
 from backend.config.settings import settings
+from backend.prompts import (
+    CONTENT_GENERATOR_SYSTEM,
+    CONTENT_GENERATOR_USER_TEMPLATE,
+)
 
 
 class ContentGeneratorAgent(BaseAgent):
@@ -28,17 +32,8 @@ class ContentGeneratorAgent(BaseAgent):
         Returns:
             str: 生成的对话内容
         """
-        # 构建系统提示词
-        system_prompt = """你是一位经验丰富的中学教师，擅长以对话的形式向学生传授知识。
-        你的任务是根据给定的主题生成一段启发性的对话内容，要求：
-        1. 采用师生对话的形式，生动有趣
-        2. 语言简洁明了，适合中学生理解
-        3. 引导学生主动思考，而非直接给出答案
-        4. 内容准确，符合教育标准
-        """
-        
-        # 构建用户提示词
-        user_prompt = f"请根据以下主题生成启发性对话内容：{input_data}"
+        system_prompt = CONTENT_GENERATOR_SYSTEM
+        user_prompt = CONTENT_GENERATOR_USER_TEMPLATE.format(input_data=input_data)
         
         # 调用模型生成内容
         response = self._call_model(
